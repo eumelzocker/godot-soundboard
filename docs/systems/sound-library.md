@@ -24,7 +24,9 @@ relative to that directory:
 version: 1
 sounds:
   airhorn.mp3:
-    note: Use after a bad joke
+    note: |-
+      Use after a bad joke
+      Not during the intro
     volume: 0.8
   sub/bell.ogg:
     note: Round start

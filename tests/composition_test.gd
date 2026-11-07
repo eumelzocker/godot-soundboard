@@ -50,7 +50,7 @@ func _test_scanner() -> void:
 func _test_metadata() -> void:
   var metadata := SoundMetadata.new(_sound_dir)
   _check(metadata.load_file(), "missing metadata file is a valid empty state")
-  metadata.set_note("alpha.wav", "  intro  ")
+  metadata.set_note("alpha.wav", "  intro\nsecond line  ")
   metadata.set_volume("alpha.wav", 0.5)
   metadata.set_note("beta.wav", "outro")
   metadata.set_volume("beta.wav", SoundMetadata.DEFAULT_VOLUME)
@@ -60,7 +60,7 @@ func _test_metadata() -> void:
   _check(not text.contains("1.0"), "default values are not written")
   var reloaded := SoundMetadata.new(_sound_dir)
   _check(reloaded.load_file(), "metadata reloads")
-  _check(reloaded.get_note("alpha.wav") == "intro", "note round-trips trimmed")
+  _check(reloaded.get_note("alpha.wav") == "intro\nsecond line", "multi-line note round-trips trimmed")
   _check(is_equal_approx(reloaded.get_volume("alpha.wav"), 0.5), "volume round-trips")
   _check(is_equal_approx(reloaded.get_volume("beta.wav"), SoundMetadata.DEFAULT_VOLUME), "unset volume uses default")
 
@@ -140,6 +140,14 @@ func _test_main_scene() -> void:
   _check(not app.playback.is_playing(card.entry.path), "global toggle mode stops a playing card")
   card.volume_changed.emit(0.5)
   _check(is_equal_approx(app.library.metadata.get_volume(card.entry.relative_path), 0.5), "card volume reaches metadata")
+  card.note_edit_requested.emit()
+  _check(app._note_editor.is_open(), "note button opens the editor")
+  app._note_editor._text_edit.text = "first\nsecond\nthird"
+  app._note_editor.save()
+  _check(not app._note_editor.is_open(), "saving closes the editor")
+  _check(card.note == "first\nsecond\nthird", "saved note reaches the card")
+  _check(app.library.metadata.get_note(card.entry.relative_path) == card.note, "saved note reaches metadata")
+  _check(card._note_button.text == "first  (+2)", "card shows the first line and the hidden line count")
   app._search_edit.text = "beta"
   app._search_edit.text_changed.emit("beta")
   _check(app.get_visible_card_count() == 1, "search filters cards")

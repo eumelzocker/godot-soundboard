@@ -14,8 +14,10 @@ omitted. Add ongoing work under `Unreleased`; released sections are immutable.
 - Initial soundboard: choose a directory through a native folder dialog, the recent-folders menu,
   or drag and drop, and get one card per MP3, OGG, or WAV file.
 - Optional sub-folder scan that groups cards by relative directory.
-- Per-sound notes and volume (dropdown beside the play button), stored as
+- Per-sound multi-line notes and volume (dropdown beside the play button), stored as
   `.soundboard.yml` inside the sound directory with debounced autosave.
+- Cards show only the first note line plus a hidden-line count; clicking it opens a modal
+  editor (Ctrl+Enter saves, Esc cancels without stopping sounds).
 - Search across file names, paths, and notes.
 - Global playback mode (overlap, restart, toggle) in the toolbar.
 - Playback progress per card, global stop (Esc), rescan (F5), and master volume.

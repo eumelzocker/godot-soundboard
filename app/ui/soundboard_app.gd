@@ -36,6 +36,7 @@ var _status_label: Label
 var _content: VBoxContainer
 var _file_dialog: FileDialog
 var _snackbar: GoSnackbar
+var _note_editor: NoteEditor
 
 
 func _ready() -> void:
@@ -72,6 +73,8 @@ func _exit_tree() -> void:
 
 
 func _input(event: InputEvent) -> void:
+  if _note_editor.is_open():
+    return
   if event.is_action_pressed(&"stop_all"):
     playback.stop_all()
   elif event.is_action_pressed(&"focus_search"):
@@ -193,6 +196,9 @@ func _build_ui() -> void:
   _file_dialog.dir_selected.connect(open_directory)
   add_child(_file_dialog)
 
+  _note_editor = NoteEditor.new()
+  add_child(_note_editor)
+
   _snackbar = GoSnackbar.new()
   add_child(_snackbar)
 
@@ -243,7 +249,13 @@ func _create_card(entry: SoundEntry) -> SoundCard:
     ) and not FileAccess.file_exists(entry.path):
       _show_error("File missing: %s" % entry.relative_path)
   )
-  card.note_changed.connect(func(note: String) -> void: library.set_note(entry, note))
+  card.note_edit_requested.connect(func() -> void:
+    _note_editor.open(entry.title, card.note, func(note: String) -> void:
+      card.set_note(note)
+      library.set_note(entry, note)
+      _apply_filter()
+    )
+  )
   card.volume_changed.connect(func(volume: float) -> void:
     library.set_volume(entry, volume)
     playback.set_volume(entry.path, volume)

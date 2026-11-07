@@ -5,21 +5,24 @@ extends PanelContainer
 ## The card only reports edits; the app decides how to store and play them.
 
 signal triggered
-signal note_changed(note: String)
+## The note button was pressed; the owner opens an editor and calls set_note() with the result.
+signal note_edit_requested
 signal volume_changed(volume: float)
 
 const VOLUME_STEPS: Array[float] = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
 
 var entry: SoundEntry
+## Full note text, possibly multi-line.
+var note: String = ""
 
 var _play_button: Button
 var _volume_button: MenuButton
 var _volumes: Array[float] = []
 var _progress: ProgressBar
-var _note_edit: LineEdit
+var _note_button: Button
 
 
-func setup(sound: SoundEntry, note: String, volume: float) -> void:
+func setup(sound: SoundEntry, initial_note: String, volume: float) -> void:
   entry = sound
   name = "SoundCard"
   GoStyle.style_panel(self, GoStyle.surface(GoTheme.BOX_CARD))
@@ -58,12 +61,29 @@ func setup(sound: SoundEntry, note: String, volume: float) -> void:
   _progress.step = 0.0
   column.add_child(_progress)
 
-  _note_edit = GoStyle.line_edit("Note")
-  _note_edit.text = note
-  _note_edit.text_changed.connect(_on_note_changed)
-  column.add_child(_note_edit)
+  _note_button = GoStyle.button("", note_edit_requested.emit, GoStyle.Tone.BARE)
+  _note_button.set_meta(&"go_no_wrap", true)
+  _note_button.autowrap_mode = TextServer.AUTOWRAP_OFF
+  _note_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+  _note_button.clip_text = true
+  _note_button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+  _note_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+  column.add_child(_note_button)
 
-  _update_tooltip()
+  set_note(initial_note)
+
+
+func set_note(text: String) -> void:
+  note = text.strip_edges()
+  var lines := note.split("\n", false)
+  if lines.is_empty():
+    _note_button.text = "Add note…"
+    _note_button.add_theme_color_override(&"font_color", GoUi.color(GoTheme.MUTED))
+  else:
+    _note_button.text = lines[0] + ("  (+%d)" % (lines.size() - 1) if lines.size() > 1 else "")
+    _note_button.remove_theme_color_override(&"font_color")
+  _note_button.tooltip_text = note if not note.is_empty() else "Click to add a note"
+  _play_button.tooltip_text = entry.relative_path + ("\n\n" + note if not note.is_empty() else "")
 
 
 func set_playing(playing: bool) -> void:
@@ -77,16 +97,11 @@ func set_progress(progress: float) -> void:
 
 ## True if every word occurs in the relative path or note.
 func matches(words: PackedStringArray) -> bool:
-  var haystack := ("%s %s" % [entry.relative_path, _note_edit.text]).to_lower()
+  var haystack := ("%s %s" % [entry.relative_path, note]).to_lower()
   for word in words:
     if not haystack.contains(word):
       return false
   return true
-
-
-func _on_note_changed(note: String) -> void:
-  _update_tooltip()
-  note_changed.emit(note)
 
 
 func _on_volume_selected(index: int) -> void:
@@ -103,8 +118,3 @@ func _show_volume(volume: float) -> void:
 
 func _volume_text(volume: float) -> String:
   return "%d%%" % roundi(volume * 100.0)
-
-
-func _update_tooltip() -> void:
-  var note := _note_edit.text.strip_edges()
-  _play_button.tooltip_text = entry.relative_path + ("\n\n" + note if not note.is_empty() else "")

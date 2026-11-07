@@ -24,6 +24,7 @@ both state and behavior, and the SceneTree owns their lifecycle.
    or the last directory at startup.
 2. The library scans the directory, loads its metadata file, and emits `entries_changed`.
 3. The app builds one `res://app/ui/sound_card.gd` per entry. Cards only emit edits and triggers.
+   Note edits go through one shared `res://app/ui/note_editor.gd` popup owned by the app.
 4. The app routes triggers to playback and edits to the library, which saves them after a debounce.
 5. Playback emits `sound_started` and `sound_stopped`; the app updates cards and polls progress
    only while something plays.
