@@ -9,8 +9,11 @@ const APP_SECTION := "app"
 const MASTER_VOLUME_KEY := "master_volume"
 const RECURSIVE_KEY := "recursive"
 const PLAYBACK_MODE_KEY := "playback_mode"
+const SLIM_LAYOUT_KEY := "slim_layout"
 const ROOT_GROUP_TITLE := "(folder root)"
 const COPY_NOTICE_SECONDS := 1.5
+const MIN_SEARCH_WIDTH := 220.0
+const MIN_WINDOW_HEIGHT := 480
 const MODE_TITLES: Dictionary[StringName, String] = {
   &"overlap": "Overlap",
   &"restart": "Restart",
@@ -21,7 +24,9 @@ const MODE_TITLES: Dictionary[StringName, String] = {
 @export var library: SoundLibrary
 @export var playback: SoundPlaybackComponent
 @export var settings_dialog: SettingsDialogComponent
+@export var length_scanner: SoundLengthScanner
 @export var default_master_volume: float = 0.8
+## Minimum card width in the slim layout; the wide layout doubles it.
 @export var min_card_width: float = 240.0
 ## Reopens the most recent directory on startup.
 @export var restore_last_directory: bool = true
@@ -29,7 +34,11 @@ const MODE_TITLES: Dictionary[StringName, String] = {
 ## Playback mode applied to every sound card.
 var playback_mode: StringName = SoundPlaybackComponent.DEFAULT_MODE
 var master_volume: float
+## Narrow cards (true) or double-width cards for long file names (false).
+var slim_layout: bool = true
 var _cards: Dictionary[String, SoundCard] = {}
+## Known lengths by path; survives UI rebuilds and is reset when the library rescans.
+var _lengths: Dictionary[String, float] = {}
 var _ui_root: Control
 var _mode_picker: OptionButton
 var _search_edit: LineEdit
@@ -46,19 +55,22 @@ var _note_editor: NoteEditor
 
 func _ready() -> void:
   assert(
-    settings != null and library != null and playback != null and settings_dialog != null,
+    settings != null and library != null and playback != null and settings_dialog != null
+      and length_scanner != null,
     "SoundboardApp needs its components"
   )
   library.recursive = settings.get_value(APP_SECTION, RECURSIVE_KEY, false)
   master_volume = settings.get_value(APP_SECTION, MASTER_VOLUME_KEY, default_master_volume)
   set_master_volume(master_volume)
+  slim_layout = settings.get_value(APP_SECTION, SLIM_LAYOUT_KEY, true)
   var saved_mode := StringName(settings.get_value(APP_SECTION, PLAYBACK_MODE_KEY, String(playback_mode)))
   if SoundPlaybackComponent.MODE_IDS.has(saved_mode):
     playback_mode = saved_mode
   _build_services()
   _build_ui()
 
-  library.entries_changed.connect(_rebuild_cards)
+  library.entries_changed.connect(_on_entries_changed)
+  length_scanner.length_ready.connect(_on_length_ready)
   library.metadata_save_failed.connect(_show_error)
   playback.sound_started.connect(_on_sound_started)
   playback.sound_stopped.connect(_on_sound_stopped)
@@ -80,6 +92,7 @@ func _exit_tree() -> void:
       MASTER_VOLUME_KEY: master_volume,
       RECURSIVE_KEY: library.recursive,
       PLAYBACK_MODE_KEY: String(playback_mode),
+      SLIM_LAYOUT_KEY: slim_layout,
     },
   })
 
@@ -104,7 +117,7 @@ func _input(event: InputEvent) -> void:
 func _process(_delta: float) -> void:
   for path in playback.get_playing_paths():
     if _cards.has(path):
-      _cards[path].set_progress(playback.get_progress(path))
+      _cards[path].set_playback_position(playback.get_position(path))
 
 
 func open_directory(path: String) -> bool:
@@ -180,24 +193,40 @@ func _build_ui() -> void:
   var layout := GoStyle.column(GoUi.metric(GoTheme.GAP))
   frame.add_child(layout)
 
-  var toolbar := GoStyle.row(GoUi.metric(GoTheme.GAP_SMALL))
+  # The toolbar wraps its three groups onto more lines in narrow windows instead of forcing the
+  # whole layout wider than the window.
+  var toolbar := GoStyle.wrap_row(GoUi.metric(GoTheme.GAP_SMALL))
   layout.add_child(toolbar)
-  toolbar.add_child(GoStyle.button("Open folder…", show_directory_dialog, GoStyle.Tone.PRIMARY))
+
+  var folder_group := GoStyle.row(GoUi.metric(GoTheme.GAP_SMALL))
+  folder_group.name = "FolderGroup"
+  folder_group.add_child(GoStyle.button("Open folder…", show_directory_dialog, GoStyle.Tone.PRIMARY))
   _recent_button = MenuButton.new()
   _recent_button.text = "Recent"
   _recent_button.flat = false
   GoStyle.style_button(_recent_button)
   _recent_button.about_to_popup.connect(_fill_recent_menu)
   _recent_button.get_popup().index_pressed.connect(_on_recent_selected)
-  toolbar.add_child(_recent_button)
+  folder_group.add_child(_recent_button)
   _rescan_button = GoStyle.icon_button(GoIconSet.REFRESH, library.rescan)
   _rescan_button.tooltip_text = "Rescan folder (F5)"
-  toolbar.add_child(_rescan_button)
+  folder_group.add_child(_rescan_button)
   _recursive_toggle = GoStyle.toggle("Subfolders", false)
   _recursive_toggle.set_pressed_no_signal(library.recursive)
   _recursive_toggle.tooltip_text = "Include sub-folders as groups"
   _recursive_toggle.toggled.connect(set_recursive)
-  toolbar.add_child(_recursive_toggle)
+  folder_group.add_child(_recursive_toggle)
+  toolbar.add_child(folder_group)
+
+  _search_edit = GoStyle.line_edit("Search name or note (Ctrl+F)")
+  _search_edit.clear_button_enabled = true
+  _search_edit.custom_minimum_size.x = MIN_SEARCH_WIDTH
+  _search_edit.text_changed.connect(func(_text: String) -> void: _apply_filter())
+  toolbar.add_child(_search_edit)
+  _search_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+  var playback_group := GoStyle.row(GoUi.metric(GoTheme.GAP_SMALL))
+  playback_group.name = "PlaybackGroup"
   _mode_picker = GoStyle.picker()
   for mode_id in SoundPlaybackComponent.MODE_IDS:
     _mode_picker.add_item(MODE_TITLES[mode_id])
@@ -206,29 +235,23 @@ func _build_ui() -> void:
   _mode_picker.item_selected.connect(
     func(index: int) -> void: set_playback_mode(SoundPlaybackComponent.MODE_IDS[index])
   )
-  toolbar.add_child(_mode_picker)
-  _search_edit = GoStyle.line_edit("Search name or note (Ctrl+F)")
-  _search_edit.clear_button_enabled = true
-  _search_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-  _search_edit.text_changed.connect(func(_text: String) -> void: _apply_filter())
-  toolbar.add_child(_search_edit)
+  playback_group.add_child(_mode_picker)
   var volume_icon := GoStyle.icon_button(GoIconSet.VOLUME_HIGH)
   volume_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-  toolbar.add_child(volume_icon)
+  playback_group.add_child(volume_icon)
   _master_slider = GoStyle.slider(0.0, 1.0, 0.01)
   _master_slider.custom_minimum_size.x = 140
   _master_slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
   _master_slider.tooltip_text = "Master volume"
   _master_slider.value = master_volume
   _master_slider.value_changed.connect(set_master_volume)
-  toolbar.add_child(_master_slider)
-  toolbar.add_child(GoStyle.button("Stop all (Esc)", playback.stop_all, GoStyle.Tone.DANGER))
+  playback_group.add_child(_master_slider)
+  playback_group.add_child(GoStyle.button("Stop all (Esc)", playback.stop_all, GoStyle.Tone.DANGER))
   var settings_button := GoStyle.icon_button(GoIconSet.SETTINGS, settings_dialog.open_dialog)
   settings_button.tooltip_text = "Settings (F1)"
-  toolbar.add_child(settings_button)
-  for control: Control in toolbar.get_children():
-    if control != _search_edit and control != _master_slider:
-      GoStyle.natural_width(control)
+  playback_group.add_child(settings_button)
+  toolbar.add_child(playback_group)
+  _limit_window_size.call_deferred([folder_group, _search_edit, playback_group])
 
   _status_label = GoStyle.label("", GoTheme.ROLE_CAPTION, GoUi.color(GoTheme.SECONDARY))
   layout.add_child(_status_label)
@@ -270,11 +293,27 @@ func _rebuild_cards() -> void:
       section.set_meta(&"sound_group", group)
       if show_groups:
         section.add_child(GoStyle.section(group if not group.is_empty() else ROOT_GROUP_TITLE, false))
-      grid = GoStyle.responsive_grid(min_card_width)
+      grid = GoStyle.responsive_grid(card_width())
       section.add_child(grid)
       _content.add_child(section)
     grid.add_child(_create_card(entry))
   _apply_filter()
+  var unknown: Array[String] = []
+  for entry in library.entries:
+    if not _lengths.has(entry.path):
+      unknown.append(entry.path)
+  length_scanner.scan(unknown)
+
+
+func _on_entries_changed() -> void:
+  _lengths.clear()
+  _rebuild_cards()
+
+
+func _on_length_ready(path: String, seconds: float) -> void:
+  _lengths[path] = seconds
+  if _cards.has(path):
+    _cards[path].set_length(seconds)
 
 
 func _create_card(entry: SoundEntry) -> SoundCard:
@@ -305,6 +344,7 @@ func _create_card(entry: SoundEntry) -> SoundCard:
     library.set_volume(entry, volume)
     playback.set_volume(entry.path, volume)
   )
+  card.set_length(_lengths.get(entry.path, -1.0))
   card.set_playing(playback.is_playing(entry.path))
   _cards[entry.path] = card
   return card
@@ -375,6 +415,10 @@ func _on_files_dropped(files: PackedStringArray) -> void:
 
 
 func _on_sound_started(path: String) -> void:
+  if not _lengths.has(path):
+    var stream := AudioFileLoader.load_stream(path)
+    if stream != null:
+      _on_length_ready(path, stream.get_length())
   if _cards.has(path):
     _cards[path].set_playing(true)
   set_process(true)
@@ -418,3 +462,25 @@ func copy_to_clipboard(text: String) -> void:
 
 func _show_error(message: String) -> void:
   _snackbar.show_text(message, GoTheme.DANGER)
+
+
+## Keeps the window at least as wide as the widest toolbar group (plus frame and scrollbar), so
+## nothing is pushed out of view. Recomputed after theme changes, which can change font sizes.
+func _limit_window_size(toolbar_items: Array) -> void:
+  var widest := card_width()
+  for item: Control in toolbar_items:
+    if is_instance_valid(item):
+      widest = maxf(widest, item.get_combined_minimum_size().x)
+  var margins := 2.0 * GoUi.metric(GoTheme.GAP) + GoUi.metric(GoTheme.GAP_SMALL)
+  get_window().min_size = Vector2i(ceili(widest + margins), MIN_WINDOW_HEIGHT)
+
+
+func set_slim_layout(on: bool) -> void:
+  if slim_layout == on:
+    return
+  slim_layout = on
+  _rebuild_ui()
+
+
+func card_width() -> float:
+  return min_card_width if slim_layout else min_card_width * 2.0

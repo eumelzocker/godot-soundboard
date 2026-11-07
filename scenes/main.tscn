@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://app/ui/soundboard_app.gd" id="1_app"]
 [ext_resource type="Script" path="res://app/components/settings/app_settings_store.gd" id="2_settings"]
@@ -11,8 +11,9 @@
 [ext_resource type="Script" path="res://app/ui/settings_dialog/about_page_provider.gd" id="9_about"]
 [ext_resource type="Script" path="res://app/ui/settings_dialog/playback_page_provider.gd" id="10_playback"]
 [ext_resource type="Script" path="res://app/ui/settings_dialog/recent_folders_page_provider.gd" id="11_recent"]
+[ext_resource type="Script" path="res://app/components/audio/sound_length_scanner.gd" id="12_lengths"]
 
-[node name="Soundboard" type="Control" node_paths=PackedStringArray("settings", "library", "playback", "settings_dialog")]
+[node name="Soundboard" type="Control" node_paths=PackedStringArray("settings", "library", "playback", "settings_dialog", "length_scanner")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -24,6 +25,7 @@ settings = NodePath("Settings")
 library = NodePath("Library")
 playback = NodePath("Playback")
 settings_dialog = NodePath("SettingsDialog")
+length_scanner = NodePath("LengthScanner")
 
 [node name="Settings" type="Node" parent="."]
 script = ExtResource("2_settings")
@@ -34,14 +36,18 @@ script = ExtResource("3_library")
 [node name="Playback" type="Node" parent="."]
 script = ExtResource("4_playback")
 
+[node name="LengthScanner" type="Node" parent="."]
+script = ExtResource("12_lengths")
+
 [node name="SettingsDialog" type="Node" parent="." node_paths=PackedStringArray("settings_store")]
 script = ExtResource("5_dialog")
 definition = ExtResource("6_definition")
 settings_store = NodePath("../Settings")
 
-[node name="AppearancePageProvider" type="Node" parent="SettingsDialog" node_paths=PackedStringArray("settings_store")]
+[node name="AppearancePageProvider" type="Node" parent="SettingsDialog" node_paths=PackedStringArray("settings_store", "app")]
 script = ExtResource("7_appearance")
 settings_store = NodePath("../../Settings")
+app = NodePath("../..")
 
 [node name="PlaybackPageProvider" type="Node" parent="SettingsDialog" node_paths=PackedStringArray("app")]
 script = ExtResource("10_playback")

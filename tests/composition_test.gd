@@ -19,6 +19,7 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+  _test_time_format()
   _test_loader()
   _test_scanner()
   _test_metadata()
@@ -30,6 +31,13 @@ func _run() -> void:
   _remove_recursive(_sound_dir)
   print("%d checks, %d failures" % [_checks, _failures])
   quit(1 if _failures > 0 else 0)
+
+
+func _test_time_format() -> void:
+  _check(SoundCard.format_time(3.25) == "3.250", "time format omits minutes below one minute")
+  _check(SoundCard.format_time(65.25) == "1:05.250", "time format pads seconds after minutes")
+  _check(SoundCard.format_time(0.0004) == "0.000", "time format rounds to milliseconds")
+  _check(SoundCard.format_time(599.9996) == "10:00.000", "time format carries rounding into minutes")
 
 
 func _test_loader() -> void:
@@ -138,6 +146,21 @@ func _test_main_scene() -> void:
   _check(app.get_visible_card_count() == app.library.entries.size(), "app shows one card per sound")
   var card := app.get_card(app.library.entries[0].path)
   _check(card != null, "cards are addressable by path")
+  for i in 5:
+    await process_frame
+  _check(not app.length_scanner.is_scanning(), "length scanner finishes in the background")
+  var groups := app._ui_root.find_children("*Group", "HBoxContainer", true, false)
+  _check(
+    groups.size() == 2 and groups.all(func(g: Control) -> bool: return root.min_size.x >= g.get_combined_minimum_size().x),
+    "window minimum width fits every toolbar group"
+  )
+  _check(is_equal_approx(card.length, 0.5), "card receives the scanned length")
+  _check(card._time_label.text == "0.500", "idle card shows its length")
+  card.set_playing(true)
+  card.set_playback_position(0.25)
+  _check(card._time_label.text == "0.250" and is_equal_approx(card._progress.value, 0.5), "playing card shows the position")
+  card.set_playing(false)
+  _check(card._time_label.text == "0.500", "stopped card shows its length again")
   card.triggered.emit()
   _check(app.playback.is_playing(card.entry.path), "card trigger plays its sound")
   app._mode_picker.select(SoundPlaybackComponent.MODE_IDS.find(&"toggle"))
@@ -213,6 +236,18 @@ func _test_settings_dialog(app: SoundboardApp) -> void:
   dialog._on_page_filter_changed("")
 
   var appearance := dialog.get_node("AppearancePageProvider") as AppearancePageProvider
+  dialog.select_page(&"appearance")
+  _check(appearance._slim_toggle.button_pressed == app.slim_layout, "appearance page shows the card layout")
+  appearance._slim_toggle.button_pressed = false
+  await process_frame
+  var grids := app._ui_root.find_children("ResponsiveGrid", "GridContainer", true, false)
+  _check(
+    not app.slim_layout and not grids.is_empty() and is_equal_approx(grids[0].get_meta(&"go_min_cell"), app.min_card_width * 2.0),
+    "turning slim layout off doubles the card width"
+  )
+  _check(app._cards.size() == app.library.entries.size(), "cards survive the layout switch")
+  appearance._slim_toggle.button_pressed = true
+  _check(app.slim_layout and is_equal_approx(app.card_width(), app.min_card_width), "slim layout restores the narrow cards")
   var old_ui := app._ui_root
   var target_light := not String(original_preset).ends_with("_light")
   appearance.apply_preset(AppearancePageProvider.family_of(original_preset), target_light)

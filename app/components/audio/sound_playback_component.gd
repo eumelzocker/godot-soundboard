@@ -74,14 +74,10 @@ func set_volume(path: String, volume: float) -> void:
     player.volume_linear = volume
 
 
-## Playback position of the newest voice in the range 0..1, or 0 when silent.
-func get_progress(path: String) -> float:
+## Playback position of the newest voice in seconds, or 0 when silent.
+func get_position(path: String) -> float:
   var voices: Array = _voices.get(path, [])
-  if voices.is_empty():
-    return 0.0
-  var player: AudioStreamPlayer = voices.back()
-  var length := player.stream.get_length()
-  return clampf(player.get_playback_position() / length, 0.0, 1.0) if length > 0.0 else 0.0
+  return (voices.back() as AudioStreamPlayer).get_playback_position() if not voices.is_empty() else 0.0
 
 
 func _stop_voices(path: String) -> bool:

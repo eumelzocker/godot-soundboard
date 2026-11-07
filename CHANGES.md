@@ -9,6 +9,24 @@ omitted. Add ongoing work under `Unreleased`; released sections are immutable.
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-11-07
+
+### Added
+
+- Each card shows the sound length as m:ss.ttt beside the progress bar (minutes only when
+  needed). While playing, it counts the position. Lengths are detected in the background with a
+  small per-frame time budget, which also preloads the sounds.
+- "Slim layout" toggle in Settings › Appearance. On keeps the current narrow cards; off doubles
+  the card width so long file names stay readable.
+
+### Fixed
+
+- Narrow windows no longer push the layout and the scrollbar out of view: the toolbar wraps its
+  folder, search, and playback groups onto more lines, and the window keeps a minimum size
+  derived from the widest group.
+- The About page in the exported build shows the version instead of "development"; the export
+  now includes `version.txt`.
+
 ## [0.1.1] - 2026-11-07
 
 ### Added

@@ -20,5 +20,5 @@ and persisted as `app/playback_mode` in the settings.
 - At most `max_voices_per_sound` voices run per sound; the oldest is dropped first.
 - `sound_started` fires when a sound goes from silent to playing, `sound_stopped` when its last
   voice ends or is stopped.
-- `get_progress()` reports the newest voice's position in `0..1`.
+- `get_position()` reports the newest voice's position in seconds; cards derive progress from it.
 - Master volume is the `Master` bus volume, controlled by the app.

@@ -11,7 +11,7 @@ Content comes from child page providers extending
 
 | Provider | Category | Content |
 | --- | --- | --- |
-| `res://app/ui/settings_dialog/appearance_page_provider.gd` | Settings | GoHUD theme family and light mode |
+| `res://app/ui/settings_dialog/appearance_page_provider.gd` | Settings | GoHUD theme family, light mode, slim or wide card layout |
 | `res://app/ui/settings_dialog/playback_page_provider.gd` | Settings | Click behavior, master volume, subfolders (same as the toolbar) |
 | `res://app/ui/settings_dialog/recent_folders_page_provider.gd` | Folders | Open, remove, or clear recent folders |
 | `res://app/ui/settings_dialog/shortcuts_page_provider.gd` | Reference | Keyboard reference |

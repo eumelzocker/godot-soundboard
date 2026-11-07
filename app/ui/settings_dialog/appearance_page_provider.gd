@@ -1,16 +1,19 @@
 class_name AppearancePageProvider
 extends SettingsPageProvider
 
-## GoHUD theme selection as family plus light/dark mode. The chosen preset is persisted and
-## applied in _ready, before the app builds its UI.
+## GoHUD theme selection as family plus light/dark mode, and the slim or wide card layout. The
+## chosen preset is persisted and applied in _ready, before the app builds its UI; the layout is
+## stored by the app.
 
 const APPEARANCE_SECTION := "appearance"
 const THEME_PRESET_KEY := "theme_preset"
 
 @export var settings_store: AppSettingsStore
+@export var app: SoundboardApp
 
 var _family_select: OptionButton
 var _light_toggle: CheckButton
+var _slim_toggle: CheckButton
 var _families: Array[StringName] = []
 
 
@@ -52,11 +55,21 @@ func build_page() -> Control:
   _light_toggle.size_flags_horizontal = Control.SIZE_EXPAND_FILL
   _light_toggle.toggled.connect(_on_light_toggled)
   content.add_child(_light_toggle)
+
+  _slim_toggle = GoStyle.toggle("Slim layout", false)
+  _slim_toggle.name = "SlimLayoutToggle"
+  _slim_toggle.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+  _slim_toggle.disabled = app == null
+  _slim_toggle.toggled.connect(func(on: bool) -> void: app.set_slim_layout(on))
+  content.add_child(_slim_toggle)
+  content.add_child(GoStyle.label(
+    "Off doubles the card width, so long file names fit.", GoTheme.ROLE_CAPTION, GoUi.color(GoTheme.MUTED)
+  ))
   return scroll_page("AppearancePage", content)
 
 
 func get_search_text() -> String:
-  return "theme style look family light dark mode colors gohud"
+  return "theme style look family light dark mode colors gohud slim layout card width long file names"
 
 
 func sync() -> void:
@@ -65,6 +78,8 @@ func sync() -> void:
   var preset_id := current_preset_id()
   _family_select.select(maxi(_families.find(family_of(preset_id)), 0))
   _light_toggle.set_pressed_no_signal(String(preset_id).ends_with("_light"))
+  if app != null:
+    _slim_toggle.set_pressed_no_signal(app.slim_layout)
 
 
 func current_preset_id() -> StringName:
