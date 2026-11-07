@@ -46,3 +46,8 @@ godot --headless --path . --export-release "Linux" .bin/soundboard.x86_64
 
 Developer documentation starts at [docs/README.md](docs/README.md); changes are listed in
 [CHANGES.md](CHANGES.md).
+
+## License
+
+MIT, see [LICENSE](LICENSE). The bundled add-ons in `addons/` (gohud, yaml, godot_ai) keep their
+own MIT licenses; see the `LICENSE` file in each add-on directory.

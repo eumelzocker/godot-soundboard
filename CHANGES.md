@@ -9,6 +9,10 @@ omitted. Add ongoing work under `Unreleased`; released sections are immutable.
 
 ## [Unreleased]
 
+### Added
+
+- MIT license.
+
 ## [0.1.2] - 2026-11-07
 
 ### Added
