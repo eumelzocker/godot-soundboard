@@ -31,3 +31,8 @@ omitted. Add ongoing work under `Unreleased`; released sections are immutable.
 
 - The project is self-contained: documentation describes its architecture rules directly instead
   of referring to an external lab project.
+
+### Fixed
+
+- Metadata autosave now writes `.soundboard.yml` when its debounce timer expires; previously
+  edits were only saved when the app closed or switched folders within the debounce window.

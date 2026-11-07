@@ -113,9 +113,16 @@ func _test_library() -> void:
   _check(library.entries.size() == 2, "library scans flat by default")
   library.recursive = true
   _check(library.entries.size() == 3, "toggling recursion rescans")
+  var metadata_path := _sound_dir.path_join(SoundMetadata.FILE_NAME)
+  library.autosave_delay = 0.05
+  library.set_note(library.entries[0], "autosaved")
+  _check(library.has_unsaved_changes(), "an edit marks the library dirty")
+  await create_timer(0.3).timeout
+  _check(not library.has_unsaved_changes(), "the autosave timer clears pending changes")
+  _check(FileAccess.get_file_as_string(metadata_path).contains("autosaved"), "the autosave timer writes metadata into the sound directory")
   library.set_note(library.entries[0], "hello")
   library.flush()
-  _check(FileAccess.file_exists(_sound_dir.path_join(SoundMetadata.FILE_NAME)), "flush writes metadata into the sound directory")
+  _check(FileAccess.get_file_as_string(metadata_path).contains("hello"), "flush writes pending metadata immediately")
   library.free()
   DirAccess.remove_absolute(_sound_dir.path_join(SoundMetadata.FILE_NAME))
   await process_frame

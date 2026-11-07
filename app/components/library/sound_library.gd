@@ -22,6 +22,7 @@ var entries: Array[SoundEntry] = []
 var metadata := SoundMetadata.new()
 
 var _save_timer: Timer
+var _dirty: bool = false
 
 
 func _ready() -> void:
@@ -71,15 +72,24 @@ func set_volume(entry: SoundEntry, volume: float) -> void:
   _schedule_save()
 
 
+func has_unsaved_changes() -> bool:
+  return _dirty
+
+
 ## Writes pending metadata changes immediately.
 func flush() -> void:
-  if _save_timer == null or _save_timer.is_stopped():
+  if not _dirty:
     return
-  _save_timer.stop()
+  _dirty = false
+  if _save_timer != null:
+    _save_timer.stop()
   if not metadata.save_file():
     metadata_save_failed.emit(metadata.get_last_error())
 
 
 func _schedule_save() -> void:
-  if has_directory():
+  if not has_directory():
+    return
+  _dirty = true
+  if _save_timer != null:
     _save_timer.start(autosave_delay)
