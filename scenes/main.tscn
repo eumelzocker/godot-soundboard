@@ -1,0 +1,27 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://app/ui/soundboard_app.gd" id="1_app"]
+[ext_resource type="Script" path="res://app/components/settings/app_settings_store.gd" id="2_settings"]
+[ext_resource type="Script" path="res://app/components/library/sound_library.gd" id="3_library"]
+[ext_resource type="Script" path="res://app/components/audio/sound_playback_component.gd" id="4_playback"]
+
+[node name="Soundboard" type="Control" node_paths=PackedStringArray("settings", "library", "playback")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_app")
+settings = NodePath("Settings")
+library = NodePath("Library")
+playback = NodePath("Playback")
+
+[node name="Settings" type="Node" parent="."]
+script = ExtResource("2_settings")
+
+[node name="Library" type="Node" parent="."]
+script = ExtResource("3_library")
+
+[node name="Playback" type="Node" parent="."]
+script = ExtResource("4_playback")

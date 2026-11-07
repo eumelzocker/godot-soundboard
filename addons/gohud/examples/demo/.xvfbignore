@@ -1,0 +1,23 @@
+# What the virtual monitor (`xvfb_run.sh`) **leaves out** when it moves this project into the
+# container — rsync patterns.
+#
+# 🛑 Why this is needed: this demo's `addons/gohud` is a symlink to the whole repository. Inside it sit
+#    the website in 17 languages (324 images), build artifacts and the git history, so moving it as is
+#    makes **the first sync take more than 20 minutes** (measured 2026-09-16). All a screenshot needs is
+#    the code, the icons and the themes.
+# 🛑 **Cut the recursion.** `addons/gohud` is a symlink to the repository root, and the repository root
+#    holds `examples/demo` again — moved as is, `examples/demo/addons/gohud/examples/demo/…` goes on
+#    forever, the import passes 600 seconds and the capture times out (measured 2026-09-16, twice).
+#    🔑 To capture an example screen, using the repository's `tests/gohud_scene_shot.gd` from the
+#    **host project** — not from this demo — is faster and surer.
+#    🛑 Do not write it here as `res://` — `tests/` is not shipped in the release ZIP, so when a shipped
+#       file points at that path the packaging check blocks it, saying "it points at a file that is not
+#       there" (measured 2026-09-16).
+addons/gohud/examples/demo/
+www/
+builds/
+.git/
+.godot/
+.cowork/
+skills/gohud/references/
+docs/
