@@ -40,3 +40,9 @@ omitted. Add ongoing work under `Unreleased`; released sections are immutable.
 
 - Metadata autosave now writes `.soundboard.yml` when its debounce timer expires; previously
   edits were only saved when the app closed or switched folders within the debounce window.
+- Selecting a theme in the settings dialog no longer logs popup disconnect and `grab_focus`
+  errors; dialog and app rebuilds now run after the dropdown popup has closed.
+- The Linux export is no longer silent on NixOS: `.bin/soundboard.sh` starts it in the flake
+  runtime shell, which now also sets `NIX_LD` so glibc matches the audio libraries.
+- Closing a tooltip no longer logs "disconnect a nonexistent connection" errors (a Godot 4.7.2
+  issue with embedded popups); tooltips and menus now open as native subwindows.

@@ -7,3 +7,5 @@
 !.bin/.gdignore
 !.bin/.envrc
 !.bin/flake.nix
+!.bin/soundboard.sh
+!.bin/flake.lock

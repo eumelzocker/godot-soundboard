@@ -37,7 +37,9 @@ func _ready() -> void:
     push_warning("%s cannot toggle because action '%s' is unavailable" % [name, toggle_action])
   for provider in _page_providers():
     provider.configure(definition)
-    provider.rebuild_requested.connect(_on_provider_rebuild_requested)
+    # Deferred: a request usually comes from a dropdown whose popup is still closing. Rebuilding
+    # synchronously removes that popup mid-close, which logs disconnect and grab_focus errors.
+    provider.rebuild_requested.connect(_on_provider_rebuild_requested, CONNECT_DEFERRED)
 
 
 func _unhandled_input(event: InputEvent) -> void:

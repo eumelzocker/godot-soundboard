@@ -41,7 +41,6 @@ var _content: VBoxContainer
 var _file_dialog: FileDialog
 var _snackbar: GoSnackbar
 var _note_editor: NoteEditor
-var _rebuild_pending: bool = false
 
 
 func _ready() -> void:
@@ -63,7 +62,7 @@ func _ready() -> void:
   playback.sound_started.connect(_on_sound_started)
   playback.sound_stopped.connect(_on_sound_stopped)
   get_window().files_dropped.connect(_on_files_dropped)
-  GoUi.watch(_schedule_rebuild)
+  GoUi.watch(_rebuild_ui)
   set_process(false)
 
   var recent := settings.get_recent_directories()
@@ -74,7 +73,7 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
-  GoUi.unwatch(_schedule_rebuild)
+  GoUi.unwatch(_rebuild_ui)
   settings.store_values({
     APP_SECTION: {
       MASTER_VOLUME_KEY: master_volume,
@@ -146,16 +145,10 @@ func _build_services() -> void:
   add_child(_note_editor)
 
 
-func _schedule_rebuild() -> void:
-  if _rebuild_pending:
-    return
-  _rebuild_pending = true
-  _rebuild_ui.call_deferred()
-
-
-## Replaces the visible UI after a theme change, keeping search text and loaded cards.
+## Replaces the visible UI after a theme change, keeping search text and loaded cards. Runs
+## synchronously: GoHUD notifies from the settings dialog's deferred rebuild, and an immediate
+## swap removes old controls before any popup tries to give focus back to them.
 func _rebuild_ui() -> void:
-  _rebuild_pending = false
   if not is_inside_tree():
     return
   var search_text := _search_edit.text

@@ -28,7 +28,11 @@
       devShells.${system}.default = pkgs.mkShell {
         packages = runtimeLibs;
 
+        # nix-ld starts the export with the loader in NIX_LD. Using this nixpkgs' loader keeps glibc
+        # and the dlopen()ed audio and display libraries on the same version; a newer alsa-lib or
+        # libpulse under the system glibc fails and leaves Godot on the silent dummy audio driver.
         shellHook = ''
+          export NIX_LD="$(cat ${pkgs.stdenv.cc}/nix-support/dynamic-linker)"
           export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath runtimeLibs}:''${LD_LIBRARY_PATH:-}"
         '';
       };

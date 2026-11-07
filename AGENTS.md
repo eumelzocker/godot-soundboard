@@ -34,6 +34,8 @@ diagnostics, and new project documentation in English.
   and smoke tests.
 - Use repository files and headless Godot commands for source inspection and automated tests.
 - If no Godot AI session is connected, report it and continue with filesystem or headless checks.
+- Export with `godot --headless --path . --export-release "Linux" .bin/soundboard.x86_64` and start
+  the export with `.bin/soundboard.sh`, which provides matching runtime libraries on NixOS.
 - Run the tests with `godot --headless --path . -s res://tests/composition_test.gd`. On NixOS,
   unset `LD_LIBRARY_PATH` if Godot fails with a glibc error.
 
