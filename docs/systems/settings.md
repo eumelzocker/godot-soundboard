@@ -12,6 +12,7 @@
 | `recent` | `directories` | Recently opened directories, newest first, capped at `max_recent_directories` |
 | `app` | `master_volume` | Master bus volume `0..1` |
 | `app` | `recursive` | Sub-folder scanning |
+| `app` | `playback_mode` | Global playback mode: `overlap`, `restart`, or `toggle` |
 
 ## Invariants
 

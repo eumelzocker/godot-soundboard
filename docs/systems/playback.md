@@ -4,7 +4,8 @@
 
 `res://app/components/audio/sound_playback_component.gd` plays sounds identified by absolute
 path on non-spatial `AudioStreamPlayer` voices. It knows nothing about cards or metadata; callers
-pass volume and mode with each trigger.
+pass volume and mode with each trigger. The app applies one global mode, chosen in the toolbar
+and persisted as `app/playback_mode` in the settings.
 
 ## Modes
 

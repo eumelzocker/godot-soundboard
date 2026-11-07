@@ -17,7 +17,7 @@ and its metadata. `res://app/components/library/sound_directory_scanner.gd` find
 
 ## Metadata file
 
-Notes and preferences live in `.soundboard.yml` inside the sound directory, keyed by the path
+Notes and volumes live in `.soundboard.yml` inside the sound directory, keyed by the path
 relative to that directory:
 
 ```yaml
@@ -26,13 +26,12 @@ sounds:
   airhorn.mp3:
     note: Use after a bad joke
     volume: 0.8
-    mode: restart
   sub/bell.ogg:
     note: Round start
 ```
 
 - Only non-default values are written; an entry without values is removed.
 - Entries for files that are currently missing are kept.
-- Unknown modes and malformed values are ignored; volume is clamped to `0..2`.
+- Unknown keys and malformed values are ignored; volume is clamped to `0..2`.
 - Edits are saved after `autosave_delay` and when the library leaves the tree.
 - A failed load or save is reported through `metadata_save_failed`; the app shows it in a snackbar.

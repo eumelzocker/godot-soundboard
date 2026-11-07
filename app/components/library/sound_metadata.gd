@@ -1,7 +1,7 @@
 class_name SoundMetadata
 extends RefCounted
 
-## Per-sound notes and playback preferences stored as YAML inside the sound directory.
+## Per-sound notes and volumes stored as YAML inside the sound directory.
 ## Only values that differ from the defaults are written. Entries of files that are currently
 ## missing are kept, so a temporarily moved file does not lose its note.
 
@@ -50,9 +50,6 @@ func load_file() -> bool:
     var volume: Variant = raw.get("volume")
     if volume is float or volume is int:
       values.volume = clampf(float(volume), 0.0, MAX_VOLUME)
-    var mode: Variant = raw.get("mode")
-    if mode is String and SoundPlaybackComponent.MODE_IDS.has(StringName(mode)):
-      values.mode = StringName(mode)
     if not values.is_empty():
       _sounds[key] = values
   return true
@@ -64,10 +61,7 @@ func save_file() -> bool:
   var keys := _sounds.keys()
   keys.sort()
   for key: String in keys:
-    var values := _sounds[key].duplicate()
-    if values.has("mode"):
-      values.mode = String(values.mode)
-    sounds[key] = values
+    sounds[key] = _sounds[key]
   var result = YAML.stringify({"version": FORMAT_VERSION, "sounds": sounds})
   if result.has_error():
     return _fail("could not serialize notes: %s" % result.get_error())
@@ -93,20 +87,12 @@ func get_volume(relative_path: String) -> float:
   return _sounds.get(relative_path, {}).get("volume", DEFAULT_VOLUME)
 
 
-func get_mode(relative_path: String) -> StringName:
-  return _sounds.get(relative_path, {}).get("mode", SoundPlaybackComponent.DEFAULT_MODE)
-
-
 func set_note(relative_path: String, note: String) -> void:
   _set_value(relative_path, "note", note.strip_edges(), "")
 
 
 func set_volume(relative_path: String, volume: float) -> void:
   _set_value(relative_path, "volume", snappedf(clampf(volume, 0.0, MAX_VOLUME), 0.01), DEFAULT_VOLUME)
-
-
-func set_mode(relative_path: String, mode: StringName) -> void:
-  _set_value(relative_path, "mode", mode, SoundPlaybackComponent.DEFAULT_MODE)
 
 
 func _set_value(relative_path: String, key: String, value: Variant, default: Variant) -> void:

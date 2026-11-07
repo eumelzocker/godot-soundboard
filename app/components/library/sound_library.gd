@@ -71,11 +71,6 @@ func set_volume(entry: SoundEntry, volume: float) -> void:
   _schedule_save()
 
 
-func set_mode(entry: SoundEntry, mode: StringName) -> void:
-  metadata.set_mode(entry.relative_path, mode)
-  _schedule_save()
-
-
 ## Writes pending metadata changes immediately.
 func flush() -> void:
   if _save_timer == null or _save_timer.is_stopped():

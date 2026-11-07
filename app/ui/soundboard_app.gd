@@ -7,17 +7,26 @@ extends Control
 const APP_SECTION := "app"
 const MASTER_VOLUME_KEY := "master_volume"
 const RECURSIVE_KEY := "recursive"
+const PLAYBACK_MODE_KEY := "playback_mode"
 const ROOT_GROUP_TITLE := "(folder root)"
+const MODE_TITLES: Dictionary[StringName, String] = {
+  &"overlap": "Overlap",
+  &"restart": "Restart",
+  &"toggle": "Toggle",
+}
 
 @export var settings: AppSettingsStore
 @export var library: SoundLibrary
 @export var playback: SoundPlaybackComponent
 @export var default_master_volume: float = 0.8
-@export var min_card_width: float = 280.0
+@export var min_card_width: float = 240.0
 ## Reopens the most recent directory on startup.
 @export var restore_last_directory: bool = true
 
+## Playback mode applied to every sound card.
+var playback_mode: StringName = SoundPlaybackComponent.DEFAULT_MODE
 var _cards: Dictionary[String, SoundCard] = {}
+var _mode_picker: OptionButton
 var _search_edit: LineEdit
 var _recent_button: MenuButton
 var _rescan_button: Button
@@ -36,6 +45,7 @@ func _ready() -> void:
   _recursive_toggle.set_pressed_no_signal(library.recursive)
   _master_slider.value = settings.get_value(APP_SECTION, MASTER_VOLUME_KEY, default_master_volume)
   _apply_master_volume(_master_slider.value)
+  _set_playback_mode(StringName(settings.get_value(APP_SECTION, PLAYBACK_MODE_KEY, String(playback_mode))))
 
   library.entries_changed.connect(_rebuild_cards)
   library.metadata_save_failed.connect(_show_error)
@@ -53,7 +63,11 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
   settings.store_values({
-    APP_SECTION: {MASTER_VOLUME_KEY: _master_slider.value, RECURSIVE_KEY: library.recursive},
+    APP_SECTION: {
+      MASTER_VOLUME_KEY: _master_slider.value,
+      RECURSIVE_KEY: library.recursive,
+      PLAYBACK_MODE_KEY: String(playback_mode),
+    },
   })
 
 
@@ -133,6 +147,14 @@ func _build_ui() -> void:
   _recursive_toggle.tooltip_text = "Include sub-folders as groups"
   _recursive_toggle.toggled.connect(func(on: bool) -> void: library.recursive = on)
   toolbar.add_child(_recursive_toggle)
+  _mode_picker = GoStyle.picker()
+  for mode_id in SoundPlaybackComponent.MODE_IDS:
+    _mode_picker.add_item(MODE_TITLES[mode_id])
+  _mode_picker.tooltip_text = "Click behavior for all sounds\nOverlap: every click adds a voice\nRestart: a click restarts the sound\nToggle: a click starts or stops the sound"
+  _mode_picker.item_selected.connect(
+    func(index: int) -> void: _set_playback_mode(SoundPlaybackComponent.MODE_IDS[index])
+  )
+  toolbar.add_child(_mode_picker)
   _search_edit = GoStyle.line_edit("Search name or note (Ctrl+F)")
   _search_edit.clear_button_enabled = true
   _search_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -214,23 +236,18 @@ func _create_card(entry: SoundEntry) -> SoundCard:
     entry,
     metadata.get_note(entry.relative_path),
     metadata.get_volume(entry.relative_path),
-    metadata.get_mode(entry.relative_path),
   )
   card.triggered.connect(func() -> void:
     if not playback.trigger(
-      entry.path,
-      metadata.get_volume(entry.relative_path),
-      metadata.get_mode(entry.relative_path),
+      entry.path, metadata.get_volume(entry.relative_path), playback_mode
     ) and not FileAccess.file_exists(entry.path):
       _show_error("File missing: %s" % entry.relative_path)
   )
-  card.stop_requested.connect(playback.stop.bind(entry.path))
   card.note_changed.connect(func(note: String) -> void: library.set_note(entry, note))
   card.volume_changed.connect(func(volume: float) -> void:
     library.set_volume(entry, volume)
     playback.set_volume(entry.path, volume)
   )
-  card.mode_changed.connect(func(mode: StringName) -> void: library.set_mode(entry, mode))
   card.set_playing(playback.is_playing(entry.path))
   _cards[entry.path] = card
   return card
@@ -312,6 +329,14 @@ func _on_sound_stopped(path: String) -> void:
     _cards[path].set_playing(false)
   set_process(not playback.get_playing_paths().is_empty())
   _update_status()
+
+
+func _set_playback_mode(mode: StringName) -> void:
+  var index := SoundPlaybackComponent.MODE_IDS.find(mode)
+  if index < 0:
+    return
+  playback_mode = mode
+  _mode_picker.select(index)
 
 
 func _apply_master_volume(volume: float) -> void:

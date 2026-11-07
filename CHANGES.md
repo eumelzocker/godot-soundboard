@@ -14,10 +14,11 @@ omitted. Add ongoing work under `Unreleased`; released sections are immutable.
 - Initial soundboard: choose a directory through a native folder dialog, the recent-folders menu,
   or drag and drop, and get one card per MP3, OGG, or WAV file.
 - Optional sub-folder scan that groups cards by relative directory.
-- Per-sound notes, volume, and playback mode (overlap, restart, toggle), stored as
+- Per-sound notes and volume (dropdown beside the play button), stored as
   `.soundboard.yml` inside the sound directory with debounced autosave.
 - Search across file names, paths, and notes.
-- Playback progress per card, per-sound stop, global stop (Esc), rescan (F5), and master volume.
+- Global playback mode (overlap, restart, toggle) in the toolbar.
+- Playback progress per card, global stop (Esc), rescan (F5), and master volume.
 - Recently used directories and app preferences persisted in `user://settings.cfg`; the most
   recent directory reopens on startup.
 - Headless composition tests and documentation path checks.
