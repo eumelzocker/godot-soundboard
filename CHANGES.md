@@ -9,6 +9,8 @@ omitted. Add ongoing work under `Unreleased`; released sections are immutable.
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-07
+
 ### Added
 
 - Initial soundboard: choose a directory through a native folder dialog, the recent-folders menu,
@@ -23,26 +25,13 @@ omitted. Add ongoing work under `Unreleased`; released sections are immutable.
 - Playback progress per card, global stop (Esc), rescan (F5), and master volume.
 - Recently used directories and app preferences persisted in `user://settings.cfg`; the most
   recent directory reopens on startup.
-- Headless composition tests and documentation path checks.
 - F1 settings dialog with a searchable page tree: GoHUD theme family and light mode (persisted,
   applied live by rebuilding the UI), a shortcut reference, and an About page. A gear button in
   the toolbar opens it too. The dialog and the note editor use a nearly opaque background
   (`background_alpha`, 97%) instead of the 80% theme default.
-- Linux export preset writing to `.bin/soundboard.x86_64`; the Nix runtime shell in `.bin/` is
-  now tracked.
-
-### Changed
-
-- The project is self-contained: documentation describes its architecture rules directly instead
-  of referring to an external lab project.
-
-### Fixed
-
-- Metadata autosave now writes `.soundboard.yml` when its debounce timer expires; previously
-  edits were only saved when the app closed or switched folders within the debounce window.
-- Selecting a theme in the settings dialog no longer logs popup disconnect and `grab_focus`
-  errors; dialog and app rebuilds now run after the dropdown popup has closed.
-- The Linux export is no longer silent on NixOS: `.bin/soundboard.sh` starts it in the flake
-  runtime shell, which now also sets `NIX_LD` so glibc matches the audio libraries.
-- Closing a tooltip no longer logs "disconnect a nonexistent connection" errors (a Godot 4.7.2
-  issue with embedded popups); tooltips and menus now open as native subwindows.
+- Tooltips and menus open as native subwindows, which avoids Godot 4.7.2 errors when embedded
+  tooltips close.
+- Linux export preset writing to `.bin/soundboard.x86_64`, plus `.bin/soundboard.sh`, which
+  starts the export on NixOS in the tracked flake runtime shell with matching display and audio
+  libraries.
+- Headless composition tests and documentation path checks.
