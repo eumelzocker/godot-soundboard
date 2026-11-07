@@ -3,8 +3,7 @@
 ## Responsibility
 
 `res://app/components/settings/app_settings_store.gd` persists app-wide preferences in
-`user://settings.cfg` as a `ConfigFile`. It is adapted from the lab dialog settings store of
-`../gamedev-lab/`.
+`user://settings.cfg` as a `ConfigFile`.
 
 ## Contents
 

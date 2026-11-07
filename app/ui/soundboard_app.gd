@@ -190,7 +190,7 @@ func _rebuild_cards() -> void:
   var show_groups := library.recursive and library.entries.any(
     func(entry: SoundEntry) -> bool: return not entry.group.is_empty()
   )
-  var grid: GridContainer
+  var grid: GridContainer = null
   var group := ""
   for entry in library.entries:
     if grid == null or entry.group != group:

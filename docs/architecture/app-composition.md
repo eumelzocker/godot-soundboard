@@ -2,10 +2,15 @@
 
 ## Summary
 
-The soundboard follows the Godot-native, component-based architecture of `../gamedev-lab/`.
+The soundboard uses a **Godot-native, component-based architecture**. Scenes are composition
+roots: a host node owns focused child components, and typed exported node references make
+dependencies visible in the editor. Signals carry reactions that should remain loosely coupled.
+
+This is not an Entity Component System (ECS). Godot nodes remain the actors, components contain
+both state and behavior, and the SceneTree owns their lifecycle.
+
 `res://scenes/main.tscn` is the composition root. Its root node runs
-`res://app/ui/soundboard_app.gd` and holds three child components wired through typed exported
-references:
+`res://app/ui/soundboard_app.gd` and holds three child components:
 
 | Node | Script | Responsibility |
 | --- | --- | --- |
@@ -23,11 +28,41 @@ references:
 5. Playback emits `sound_started` and `sound_stopped`; the app updates cards and polls progress
    only while something plays.
 
+## Choosing a coupling mechanism
+
+| Need | Prefer |
+| --- | --- |
+| Known collaborator in a statically authored scene | Typed exported node reference |
+| One component announces an event without owning the reaction | Signal |
+| Stateless helper without lifecycle (loading, scanning, parsing) | Static functions on a `RefCounted` class |
+| Optional capability shared through a small protocol | Focused method contract plus validation |
+
+Avoid inheritance for assembling capabilities; it is still appropriate for a narrow
+implementation contract.
+
+## Ownership boundaries
+
+- `res://app/components` contains non-UI components. They never reference UI classes.
+- `res://app/ui` contains presentation. UI classes do not load files or play audio.
+- `res://scenes` contains scenes; `res://tests` contains headless tests.
+- `res://addons` contains vendored third-party add-ons and is not modified in place.
+
 ## Rules
 
-- Components do not reference UI classes. UI classes do not load files or play audio.
 - Audio files are loaded lazily on first trigger through
   `res://app/components/audio/audio_file_loader.gd` and cached until the next rescan.
 - UI is built in code with GoHUD helpers so it follows the configured theme preset
   (`gohud/theme/preset` in `res://project.godot`).
-- New behavior receives coverage in `res://tests/composition_test.gd`.
+
+## Extension rules
+
+Before adding a component, verify that the capability can be configured, removed, replaced, or
+reused independently. Otherwise, extending an existing component is usually clearer.
+
+New behavior should:
+
+1. own one coherent responsibility;
+2. expose only dependencies it actually uses;
+3. validate required references at startup and degrade safely for optional references;
+4. keep presentation separate from loading, persistence, and playback policy; and
+5. receive coverage in `res://tests/composition_test.gd`.

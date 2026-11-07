@@ -2,6 +2,8 @@
 .godot/
 /android/
 
-# output dirs
+# output dirs: keep the Nix runtime shell, ignore exported builds
 .bin/*
 !.bin/.gdignore
+!.bin/.envrc
+!.bin/flake.nix

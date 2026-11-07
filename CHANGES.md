@@ -21,3 +21,10 @@ omitted. Add ongoing work under `Unreleased`; released sections are immutable.
 - Recently used directories and app preferences persisted in `user://settings.cfg`; the most
   recent directory reopens on startup.
 - Headless composition tests and documentation path checks.
+- Linux export preset writing to `.bin/soundboard.x86_64`; the Nix runtime shell in `.bin/` is
+  now tracked.
+
+### Changed
+
+- The project is self-contained: documentation describes its architecture rules directly instead
+  of referring to an external lab project.

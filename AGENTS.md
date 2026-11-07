@@ -2,8 +2,7 @@
 
 A desktop soundboard built with Godot 4.7. It scans a local directory for audio files, shows a
 play button per file, and stores notes and playback preferences in a YAML file inside that
-directory. Concepts, workflows, and architecture decisions follow `../gamedev-lab/` and extend
-them where needed.
+directory.
 
 Chat to the user in german, but keep application code, identifiers, comments, UI text, logs,
 diagnostics, and new project documentation in English.
@@ -25,8 +24,8 @@ diagnostics, and new project documentation in English.
 - `app/components/` contains reusable non-UI components (audio, library, settings).
 - `app/ui/` contains GoHUD-based presentation and the composition-root script.
 - `scenes/` contains scenes. `tests/` contains headless tests.
-- `addons/` contains third-party add-ons copied from `../gamedev-lab/`. Do not modify them in
-  place; update them by copying a newer version.
+- `addons/` contains vendored third-party add-ons (gohud, yaml, godot_ai). Do not modify them in
+  place; update them by replacing the add-on directory with a newer release.
 
 
 ## Godot workflow
