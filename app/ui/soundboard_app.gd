@@ -2,7 +2,8 @@ class_name SoundboardApp
 extends Control
 
 ## Composition root of the soundboard window. Connects library, playback, and settings with the
-## GoHUD-based toolbar and the grid of sound cards.
+## GoHUD-based toolbar and the grid of sound cards. The visible UI is rebuilt from current state
+## whenever the GoHUD theme changes.
 
 const APP_SECTION := "app"
 const MASTER_VOLUME_KEY := "master_volume"
@@ -18,6 +19,7 @@ const MODE_TITLES: Dictionary[StringName, String] = {
 @export var settings: AppSettingsStore
 @export var library: SoundLibrary
 @export var playback: SoundPlaybackComponent
+@export var settings_dialog: SettingsDialogComponent
 @export var default_master_volume: float = 0.8
 @export var min_card_width: float = 240.0
 ## Reopens the most recent directory on startup.
@@ -25,7 +27,9 @@ const MODE_TITLES: Dictionary[StringName, String] = {
 
 ## Playback mode applied to every sound card.
 var playback_mode: StringName = SoundPlaybackComponent.DEFAULT_MODE
+var master_volume: float
 var _cards: Dictionary[String, SoundCard] = {}
+var _ui_root: Control
 var _mode_picker: OptionButton
 var _search_edit: LineEdit
 var _recent_button: MenuButton
@@ -37,22 +41,29 @@ var _content: VBoxContainer
 var _file_dialog: FileDialog
 var _snackbar: GoSnackbar
 var _note_editor: NoteEditor
+var _rebuild_pending: bool = false
 
 
 func _ready() -> void:
-  assert(settings != null and library != null and playback != null, "SoundboardApp needs its components")
-  _build_ui()
+  assert(
+    settings != null and library != null and playback != null and settings_dialog != null,
+    "SoundboardApp needs its components"
+  )
   library.recursive = settings.get_value(APP_SECTION, RECURSIVE_KEY, false)
-  _recursive_toggle.set_pressed_no_signal(library.recursive)
-  _master_slider.value = settings.get_value(APP_SECTION, MASTER_VOLUME_KEY, default_master_volume)
-  _apply_master_volume(_master_slider.value)
-  _set_playback_mode(StringName(settings.get_value(APP_SECTION, PLAYBACK_MODE_KEY, String(playback_mode))))
+  master_volume = settings.get_value(APP_SECTION, MASTER_VOLUME_KEY, default_master_volume)
+  _apply_master_volume(master_volume)
+  var saved_mode := StringName(settings.get_value(APP_SECTION, PLAYBACK_MODE_KEY, String(playback_mode)))
+  if SoundPlaybackComponent.MODE_IDS.has(saved_mode):
+    playback_mode = saved_mode
+  _build_services()
+  _build_ui()
 
   library.entries_changed.connect(_rebuild_cards)
   library.metadata_save_failed.connect(_show_error)
   playback.sound_started.connect(_on_sound_started)
   playback.sound_stopped.connect(_on_sound_stopped)
   get_window().files_dropped.connect(_on_files_dropped)
+  GoUi.watch(_schedule_rebuild)
   set_process(false)
 
   var recent := settings.get_recent_directories()
@@ -63,9 +74,10 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
+  GoUi.unwatch(_schedule_rebuild)
   settings.store_values({
     APP_SECTION: {
-      MASTER_VOLUME_KEY: _master_slider.value,
+      MASTER_VOLUME_KEY: master_volume,
       RECURSIVE_KEY: library.recursive,
       PLAYBACK_MODE_KEY: String(playback_mode),
     },
@@ -73,7 +85,7 @@ func _exit_tree() -> void:
 
 
 func _input(event: InputEvent) -> void:
-  if _note_editor.is_open():
+  if _note_editor.is_open() or settings_dialog.is_dialog_open():
     return
   if event.is_action_pressed(&"stop_all"):
     playback.stop_all()
@@ -120,16 +132,57 @@ func get_visible_card_count() -> int:
   return _cards.values().filter(func(card: SoundCard) -> bool: return card.visible).size()
 
 
+## Theme-independent helpers that survive UI rebuilds.
+func _build_services() -> void:
+  _file_dialog = FileDialog.new()
+  _file_dialog.title = "Choose sound folder"
+  _file_dialog.file_mode = FileDialog.FILE_MODE_OPEN_DIR
+  _file_dialog.access = FileDialog.ACCESS_FILESYSTEM
+  _file_dialog.use_native_dialog = true
+  _file_dialog.dir_selected.connect(open_directory)
+  add_child(_file_dialog)
+
+  _note_editor = NoteEditor.new()
+  add_child(_note_editor)
+
+
+func _schedule_rebuild() -> void:
+  if _rebuild_pending:
+    return
+  _rebuild_pending = true
+  _rebuild_ui.call_deferred()
+
+
+## Replaces the visible UI after a theme change, keeping search text and loaded cards.
+func _rebuild_ui() -> void:
+  _rebuild_pending = false
+  if not is_inside_tree():
+    return
+  var search_text := _search_edit.text
+  remove_child(_ui_root)
+  _ui_root.queue_free()
+  _build_ui()
+  _search_edit.text = search_text
+  _rebuild_cards()
+
+
 func _build_ui() -> void:
   theme = GoUi.theme()
+  _ui_root = Control.new()
+  _ui_root.name = "UI"
+  _ui_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+  _ui_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+  add_child(_ui_root)
+  move_child(_ui_root, 0)
+
   var background := ColorRect.new()
   background.color = GoUi.color(GoTheme.BACKGROUND)
   background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-  add_child(background)
+  _ui_root.add_child(background)
 
   var frame := GoStyle.padding(GoUi.metric(GoTheme.GAP))
   frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-  add_child(frame)
+  _ui_root.add_child(frame)
   var layout := GoStyle.column(GoUi.metric(GoTheme.GAP))
   frame.add_child(layout)
 
@@ -147,12 +200,14 @@ func _build_ui() -> void:
   _rescan_button.tooltip_text = "Rescan folder (F5)"
   toolbar.add_child(_rescan_button)
   _recursive_toggle = GoStyle.toggle("Subfolders", false)
+  _recursive_toggle.set_pressed_no_signal(library.recursive)
   _recursive_toggle.tooltip_text = "Include sub-folders as groups"
   _recursive_toggle.toggled.connect(func(on: bool) -> void: library.recursive = on)
   toolbar.add_child(_recursive_toggle)
   _mode_picker = GoStyle.picker()
   for mode_id in SoundPlaybackComponent.MODE_IDS:
     _mode_picker.add_item(MODE_TITLES[mode_id])
+  _mode_picker.select(SoundPlaybackComponent.MODE_IDS.find(playback_mode))
   _mode_picker.tooltip_text = "Click behavior for all sounds\nOverlap: every click adds a voice\nRestart: a click restarts the sound\nToggle: a click starts or stops the sound"
   _mode_picker.item_selected.connect(
     func(index: int) -> void: _set_playback_mode(SoundPlaybackComponent.MODE_IDS[index])
@@ -170,9 +225,13 @@ func _build_ui() -> void:
   _master_slider.custom_minimum_size.x = 140
   _master_slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
   _master_slider.tooltip_text = "Master volume"
+  _master_slider.value = master_volume
   _master_slider.value_changed.connect(_apply_master_volume)
   toolbar.add_child(_master_slider)
   toolbar.add_child(GoStyle.button("Stop all (Esc)", playback.stop_all, GoStyle.Tone.DANGER))
+  var settings_button := GoStyle.icon_button(GoIconSet.SETTINGS, settings_dialog.open_dialog)
+  settings_button.tooltip_text = "Settings (F1)"
+  toolbar.add_child(settings_button)
   for control: Control in toolbar.get_children():
     if control != _search_edit and control != _master_slider:
       GoStyle.natural_width(control)
@@ -188,19 +247,8 @@ func _build_ui() -> void:
   _content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
   scroll.add_child(_content)
 
-  _file_dialog = FileDialog.new()
-  _file_dialog.title = "Choose sound folder"
-  _file_dialog.file_mode = FileDialog.FILE_MODE_OPEN_DIR
-  _file_dialog.access = FileDialog.ACCESS_FILESYSTEM
-  _file_dialog.use_native_dialog = true
-  _file_dialog.dir_selected.connect(open_directory)
-  add_child(_file_dialog)
-
-  _note_editor = NoteEditor.new()
-  add_child(_note_editor)
-
   _snackbar = GoSnackbar.new()
-  add_child(_snackbar)
+  _ui_root.add_child(_snackbar)
 
 
 func _rebuild_cards() -> void:
@@ -352,6 +400,7 @@ func _set_playback_mode(mode: StringName) -> void:
 
 
 func _apply_master_volume(volume: float) -> void:
+  master_volume = volume
   AudioServer.set_bus_volume_linear(0, volume)
 
 

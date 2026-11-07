@@ -1,0 +1,61 @@
+[gd_resource type="Resource" script_class="SettingsDialogDefinition" load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://app/ui/settings_dialog/settings_dialog_definition.gd" id="1_definition"]
+[ext_resource type="Script" path="res://app/ui/settings_dialog/dialog_shortcut.gd" id="2_shortcut"]
+[ext_resource type="Texture2D" path="res://icon.svg" id="3_icon"]
+
+[sub_resource type="Resource" id="Shortcut_open"]
+script = ExtResource("2_shortcut")
+section = "FOLDERS"
+action = &"open_directory"
+fallback_key = "Ctrl+O"
+title = "Open folder"
+detail = "Choose a sound folder. Dropping a folder onto the window works too."
+
+[sub_resource type="Resource" id="Shortcut_rescan"]
+script = ExtResource("2_shortcut")
+section = "FOLDERS"
+action = &"rescan_directory"
+fallback_key = "F5"
+title = "Rescan"
+detail = "Reload the folder after files were added, removed, or replaced."
+
+[sub_resource type="Resource" id="Shortcut_search"]
+script = ExtResource("2_shortcut")
+section = "PLAYBACK"
+action = &"focus_search"
+fallback_key = "Ctrl+F"
+title = "Search"
+detail = "Filter sounds by file name, path, or note."
+
+[sub_resource type="Resource" id="Shortcut_stop"]
+script = ExtResource("2_shortcut")
+section = "PLAYBACK"
+action = &"stop_all"
+fallback_key = "Esc"
+title = "Stop all"
+detail = "Silence every playing sound. Inside a popup, Esc closes the popup instead."
+
+[sub_resource type="Resource" id="Shortcut_note"]
+script = ExtResource("2_shortcut")
+section = "NOTES"
+fallback_key = "Ctrl+Enter"
+title = "Save note"
+detail = "Click a note line to edit it; Ctrl+Enter saves, Esc cancels."
+
+[sub_resource type="Resource" id="Shortcut_settings"]
+script = ExtResource("2_shortcut")
+section = "APP"
+action = &"toggle_settings_dialog"
+fallback_key = "F1"
+title = "Settings"
+detail = "Open or close this dialog."
+
+[resource]
+script = ExtResource("1_definition")
+shortcuts = Array[ExtResource("2_shortcut")]([SubResource("Shortcut_open"), SubResource("Shortcut_rescan"), SubResource("Shortcut_search"), SubResource("Shortcut_stop"), SubResource("Shortcut_note"), SubResource("Shortcut_settings")])
+project_name = "Soundboard"
+project_icon = ExtResource("3_icon")
+version_path = "res://version.txt"
+purpose = "Play a folder of sounds with one click."
+description = "Scans a local folder for MP3, OGG, and WAV files and keeps notes and volumes in a YAML file beside them."

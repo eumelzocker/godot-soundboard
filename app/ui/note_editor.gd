@@ -5,6 +5,8 @@ extends Node
 ## passes a callback that receives the edited text when the user saves.
 
 @export var editor_height: float = 220.0
+## Opacity of the editor background. Negative uses the GoHUD theme value (80% by default).
+@export_range(-1.0, 1.0, 0.01) var background_alpha: float = 0.97
 
 var _surface: GoSurface
 var _text_edit: TextEdit
@@ -20,6 +22,7 @@ func open(title: String, text: String, on_save: Callable) -> void:
   _on_save = on_save
   _surface = GoSurface.new()
   _surface.set_title(title)
+  _surface.alpha = background_alpha
   _surface.close_requested.connect(close)
 
   _text_edit = TextEdit.new()

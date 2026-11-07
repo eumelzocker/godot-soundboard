@@ -13,6 +13,8 @@
 | `app` | `master_volume` | Master bus volume `0..1` |
 | `app` | `recursive` | Sub-folder scanning |
 | `app` | `playback_mode` | Global playback mode: `overlap`, `restart`, or `toggle` |
+| `appearance` | `theme_preset` | GoHUD preset chosen in the settings dialog |
+| `navigation` | `last_page` | Last visited settings dialog page |
 
 ## Invariants
 

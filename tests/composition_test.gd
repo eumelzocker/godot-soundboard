@@ -159,8 +159,48 @@ func _test_main_scene() -> void:
   app._search_edit.text_changed.emit("beta")
   _check(app.get_visible_card_count() == 1, "search filters cards")
   app.playback.stop_all()
+  await _test_settings_dialog(app)
   await process_frame
   app.free()
+  await process_frame
+
+
+func _test_settings_dialog(app: SoundboardApp) -> void:
+  var dialog := app.settings_dialog
+  var original_preset := GoUi.preset().id
+  dialog.open_dialog()
+  await process_frame
+  _check(dialog.is_dialog_open(), "settings dialog opens")
+  for page_id: StringName in [&"appearance", &"shortcuts", &"about"]:
+    _check(dialog.select_page(page_id), "settings dialog has page '%s'" % page_id)
+  dialog._page_filter.set_text("version")
+  dialog._on_page_filter_changed("version")
+  _check(dialog.get_selected_page_id() == &"about", "page filter narrows to matching pages")
+  dialog._on_page_filter_changed("")
+
+  var appearance := dialog.get_node("AppearancePageProvider") as AppearancePageProvider
+  var old_ui := app._ui_root
+  var target_light := not String(original_preset).ends_with("_light")
+  appearance.apply_preset(AppearancePageProvider.family_of(original_preset), target_light)
+  await process_frame
+  await process_frame
+  _check(GoUi.preset().id != original_preset, "appearance switches the GoHUD preset")
+  _check(not is_instance_valid(old_ui) or old_ui.is_queued_for_deletion(), "theme change rebuilds the app UI")
+  _check(app.get_visible_card_count() > 0, "rebuilt UI restores the sound cards")
+  _check(dialog.is_dialog_open() and dialog.get_selected_page_id() == &"about", "dialog stays open on its page after a theme change")
+  _check(
+    app.settings.get_value(AppearancePageProvider.APPEARANCE_SECTION, AppearancePageProvider.THEME_PRESET_KEY, "") == String(GoUi.preset().id),
+    "chosen preset is stored in the settings"
+  )
+
+  var f1 := InputEventAction.new()
+  f1.action = &"toggle_settings_dialog"
+  f1.pressed = true
+  Input.parse_input_event(f1)
+  await process_frame
+  await process_frame
+  _check(not dialog.is_dialog_open(), "F1 closes the settings dialog")
+  GoUi.use_preset(original_preset)
   await process_frame
 
 

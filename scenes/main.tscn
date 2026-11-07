@@ -1,11 +1,16 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://app/ui/soundboard_app.gd" id="1_app"]
 [ext_resource type="Script" path="res://app/components/settings/app_settings_store.gd" id="2_settings"]
 [ext_resource type="Script" path="res://app/components/library/sound_library.gd" id="3_library"]
 [ext_resource type="Script" path="res://app/components/audio/sound_playback_component.gd" id="4_playback"]
+[ext_resource type="Script" path="res://app/ui/settings_dialog/settings_dialog_component.gd" id="5_dialog"]
+[ext_resource type="Resource" path="res://app/ui/settings_dialog/soundboard_dialog.tres" id="6_definition"]
+[ext_resource type="Script" path="res://app/ui/settings_dialog/appearance_page_provider.gd" id="7_appearance"]
+[ext_resource type="Script" path="res://app/ui/settings_dialog/shortcuts_page_provider.gd" id="8_shortcuts"]
+[ext_resource type="Script" path="res://app/ui/settings_dialog/about_page_provider.gd" id="9_about"]
 
-[node name="Soundboard" type="Control" node_paths=PackedStringArray("settings", "library", "playback")]
+[node name="Soundboard" type="Control" node_paths=PackedStringArray("settings", "library", "playback", "settings_dialog")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -16,6 +21,7 @@ script = ExtResource("1_app")
 settings = NodePath("Settings")
 library = NodePath("Library")
 playback = NodePath("Playback")
+settings_dialog = NodePath("SettingsDialog")
 
 [node name="Settings" type="Node" parent="."]
 script = ExtResource("2_settings")
@@ -25,3 +31,18 @@ script = ExtResource("3_library")
 
 [node name="Playback" type="Node" parent="."]
 script = ExtResource("4_playback")
+
+[node name="SettingsDialog" type="Node" parent="." node_paths=PackedStringArray("settings_store")]
+script = ExtResource("5_dialog")
+definition = ExtResource("6_definition")
+settings_store = NodePath("../Settings")
+
+[node name="AppearancePageProvider" type="Node" parent="SettingsDialog" node_paths=PackedStringArray("settings_store")]
+script = ExtResource("7_appearance")
+settings_store = NodePath("../../Settings")
+
+[node name="ShortcutsPageProvider" type="Node" parent="SettingsDialog"]
+script = ExtResource("8_shortcuts")
+
+[node name="AboutPageProvider" type="Node" parent="SettingsDialog"]
+script = ExtResource("9_about")

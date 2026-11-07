@@ -24,6 +24,10 @@ omitted. Add ongoing work under `Unreleased`; released sections are immutable.
 - Recently used directories and app preferences persisted in `user://settings.cfg`; the most
   recent directory reopens on startup.
 - Headless composition tests and documentation path checks.
+- F1 settings dialog with a searchable page tree: GoHUD theme family and light mode (persisted,
+  applied live by rebuilding the UI), a shortcut reference, and an About page. A gear button in
+  the toolbar opens it too. The dialog and the note editor use a nearly opaque background
+  (`background_alpha`, 97%) instead of the 80% theme default.
 - Linux export preset writing to `.bin/soundboard.x86_64`; the Nix runtime shell in `.bin/` is
   now tracked.
 

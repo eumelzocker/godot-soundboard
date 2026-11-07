@@ -10,13 +10,14 @@ This is not an Entity Component System (ECS). Godot nodes remain the actors, com
 both state and behavior, and the SceneTree owns their lifecycle.
 
 `res://scenes/main.tscn` is the composition root. Its root node runs
-`res://app/ui/soundboard_app.gd` and holds three child components:
+`res://app/ui/soundboard_app.gd` and holds four child components:
 
 | Node | Script | Responsibility |
 | --- | --- | --- |
 | `Settings` | `res://app/components/settings/app_settings_store.gd` | App preferences and recent directories |
 | `Library` | `res://app/components/library/sound_library.gd` | Open directory, scanned entries, metadata autosave |
 | `Playback` | `res://app/components/audio/sound_playback_component.gd` | Voices per sound, modes, progress |
+| `SettingsDialog` | `res://app/ui/settings_dialog/settings_dialog_component.gd` | F1 dialog: theme, shortcuts, about |
 
 ## Data flow
 
