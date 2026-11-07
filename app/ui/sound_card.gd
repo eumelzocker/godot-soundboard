@@ -8,14 +8,18 @@ signal triggered
 ## The note button was pressed; the owner opens an editor and calls set_note() with the result.
 signal note_edit_requested
 signal volume_changed(volume: float)
+## The copy icon was clicked; [param full_path] is true with Ctrl held.
+signal copy_requested(full_path: bool)
 
 const VOLUME_STEPS: Array[float] = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
+const COPY_ICON_SIZE := 20
 
 var entry: SoundEntry
 ## Full note text, possibly multi-line.
 var note: String = ""
 
 var _play_button: Button
+var _copy_button: Button
 var _volume_button: MenuButton
 var _volumes: Array[float] = []
 var _progress: ProgressBar
@@ -39,6 +43,14 @@ func setup(sound: SoundEntry, initial_note: String, volume: float) -> void:
   _play_button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
   _play_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
   header.add_child(_play_button)
+
+  _copy_button = GoStyle.icon_button(
+    GoIconSet.COPY,
+    func() -> void: copy_requested.emit(Input.is_key_pressed(KEY_CTRL)),
+    COPY_ICON_SIZE,
+  )
+  _copy_button.tooltip_text = "Copy file name\nCtrl+click: copy full path"
+  header.add_child(_copy_button)
 
   _volumes.assign(VOLUME_STEPS)
   if not _volumes.has(volume):

@@ -57,6 +57,10 @@ func forget_directory(path: String) -> void:
     store_values({RECENT_SECTION: {RECENT_KEY: recent}})
 
 
+func clear_recent_directories() -> void:
+  store_values({RECENT_SECTION: {RECENT_KEY: PackedStringArray()}})
+
+
 func _save() -> void:
   if not is_active():
     return

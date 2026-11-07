@@ -9,6 +9,17 @@ omitted. Add ongoing work under `Unreleased`; released sections are immutable.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-07
+
+### Added
+
+- A small copy icon beside each play button copies the file name to the clipboard; Ctrl+click
+  copies the full path. A short notice confirms what was copied.
+- Settings dialog pages "Playback" (click behavior, master volume, subfolders; synced with the
+  toolbar) and "Recent folders" (open, remove single entries, clear the list; missing folders
+  are marked).
+- A short user README in the project root.
+
 ## [0.1.0] - 2026-11-07
 
 ### Added

@@ -12,6 +12,8 @@ Content comes from child page providers extending
 | Provider | Category | Content |
 | --- | --- | --- |
 | `res://app/ui/settings_dialog/appearance_page_provider.gd` | Settings | GoHUD theme family and light mode |
+| `res://app/ui/settings_dialog/playback_page_provider.gd` | Settings | Click behavior, master volume, subfolders (same as the toolbar) |
+| `res://app/ui/settings_dialog/recent_folders_page_provider.gd` | Folders | Open, remove, or clear recent folders |
 | `res://app/ui/settings_dialog/shortcuts_page_provider.gd` | Reference | Keyboard reference |
 | `res://app/ui/settings_dialog/about_page_provider.gd` | Reference | Name, version, purpose, description |
 
@@ -32,5 +34,8 @@ Copy, shortcut entries, and About data live in the definition resource
 - Add a page by adding a provider node below `SettingsDialog` in `res://scenes/main.tscn`.
   Page IDs must be unique; `navigation_order` sorts pages.
 - Providers build fresh controls on every open and update them in `sync()`.
+- Pages that change app state call the public setters of `res://app/ui/soundboard_app.gd`
+  (`set_playback_mode`, `set_master_volume`, `set_recursive`), which keep the toolbar in sync.
+- A provider can emit `close_requested` to close the dialog, e.g. after opening a folder.
 - While the dialog or the note editor is open, the app ignores its own shortcuts, so Esc only
   closes the popup.

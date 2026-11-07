@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://app/ui/soundboard_app.gd" id="1_app"]
 [ext_resource type="Script" path="res://app/components/settings/app_settings_store.gd" id="2_settings"]
@@ -9,6 +9,8 @@
 [ext_resource type="Script" path="res://app/ui/settings_dialog/appearance_page_provider.gd" id="7_appearance"]
 [ext_resource type="Script" path="res://app/ui/settings_dialog/shortcuts_page_provider.gd" id="8_shortcuts"]
 [ext_resource type="Script" path="res://app/ui/settings_dialog/about_page_provider.gd" id="9_about"]
+[ext_resource type="Script" path="res://app/ui/settings_dialog/playback_page_provider.gd" id="10_playback"]
+[ext_resource type="Script" path="res://app/ui/settings_dialog/recent_folders_page_provider.gd" id="11_recent"]
 
 [node name="Soundboard" type="Control" node_paths=PackedStringArray("settings", "library", "playback", "settings_dialog")]
 layout_mode = 3
@@ -39,6 +41,15 @@ settings_store = NodePath("../Settings")
 
 [node name="AppearancePageProvider" type="Node" parent="SettingsDialog" node_paths=PackedStringArray("settings_store")]
 script = ExtResource("7_appearance")
+settings_store = NodePath("../../Settings")
+
+[node name="PlaybackPageProvider" type="Node" parent="SettingsDialog" node_paths=PackedStringArray("app")]
+script = ExtResource("10_playback")
+app = NodePath("../..")
+
+[node name="RecentFoldersPageProvider" type="Node" parent="SettingsDialog" node_paths=PackedStringArray("app", "settings_store")]
+script = ExtResource("11_recent")
+app = NodePath("../..")
 settings_store = NodePath("../../Settings")
 
 [node name="ShortcutsPageProvider" type="Node" parent="SettingsDialog"]

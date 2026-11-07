@@ -147,6 +147,11 @@ func _test_main_scene() -> void:
   _check(not app.playback.is_playing(card.entry.path), "global toggle mode stops a playing card")
   card.volume_changed.emit(0.5)
   _check(is_equal_approx(app.library.metadata.get_volume(card.entry.relative_path), 0.5), "card volume reaches metadata")
+  if DisplayServer.has_feature(DisplayServer.FEATURE_CLIPBOARD):
+    card.copy_requested.emit(false)
+    _check(DisplayServer.clipboard_get() == card.entry.relative_path.get_file(), "copy icon copies the file name")
+    card.copy_requested.emit(true)
+    _check(DisplayServer.clipboard_get() == card.entry.path, "Ctrl+click on the copy icon copies the full path")
   card.note_edit_requested.emit()
   _check(app._note_editor.is_open(), "note button opens the editor")
   app._note_editor._text_edit.text = "first\nsecond\nthird"
@@ -171,8 +176,37 @@ func _test_settings_dialog(app: SoundboardApp) -> void:
   dialog.open_dialog()
   await process_frame
   _check(dialog.is_dialog_open(), "settings dialog opens")
-  for page_id: StringName in [&"appearance", &"shortcuts", &"about"]:
+  for page_id: StringName in [&"appearance", &"playback", &"recent_folders", &"shortcuts", &"about"]:
     _check(dialog.select_page(page_id), "settings dialog has page '%s'" % page_id)
+
+  var playback_page := dialog.get_node("PlaybackPageProvider") as PlaybackPageProvider
+  dialog.select_page(&"playback")
+  playback_page._mode_select.select(SoundPlaybackComponent.MODE_IDS.find(&"restart"))
+  playback_page._mode_select.item_selected.emit(playback_page._mode_select.selected)
+  _check(app.playback_mode == &"restart" and app._mode_picker.selected == playback_page._mode_select.selected, "playback page sets the mode and syncs the toolbar")
+  playback_page._volume_slider.value = 0.3
+  _check(is_equal_approx(app.master_volume, 0.3) and is_equal_approx(app._master_slider.value, 0.3), "playback page sets the master volume and syncs the toolbar")
+  var recursive := app.library.recursive
+  playback_page._recursive_toggle.button_pressed = not recursive
+  _check(app.library.recursive != recursive and app._recursive_toggle.button_pressed == app.library.recursive, "playback page toggles subfolders and syncs the toolbar")
+  app._mode_picker.select(SoundPlaybackComponent.MODE_IDS.find(&"overlap"))
+  app._mode_picker.item_selected.emit(app._mode_picker.selected)
+  dialog.select_page(&"playback")
+  _check(playback_page._mode_select.selected == app._mode_picker.selected, "playback page reflects toolbar changes")
+
+  var missing_dir := _sound_dir.path_join("gone")
+  app.settings.remember_directory(missing_dir)
+  dialog.select_page(&"appearance")
+  var recent_page := dialog.get_node("RecentFoldersPageProvider") as RecentFoldersPageProvider
+  recent_page._remove(missing_dir)
+  await process_frame
+  _check(not app.settings.get_recent_directories().has(missing_dir), "recent page removes a folder")
+  _check(dialog.is_dialog_open() and dialog.get_selected_page_id() == &"appearance", "removing a folder keeps the dialog on its page")
+  recent_page._open(_sound_dir)
+  await process_frame
+  _check(not dialog.is_dialog_open(), "opening a recent folder closes the dialog")
+  dialog.open_dialog()
+  await process_frame
   dialog._page_filter.set_text("version")
   dialog._on_page_filter_changed("version")
   _check(dialog.get_selected_page_id() == &"about", "page filter narrows to matching pages")

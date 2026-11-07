@@ -10,6 +10,7 @@ const MASTER_VOLUME_KEY := "master_volume"
 const RECURSIVE_KEY := "recursive"
 const PLAYBACK_MODE_KEY := "playback_mode"
 const ROOT_GROUP_TITLE := "(folder root)"
+const COPY_NOTICE_SECONDS := 1.5
 const MODE_TITLES: Dictionary[StringName, String] = {
   &"overlap": "Overlap",
   &"restart": "Restart",
@@ -50,7 +51,7 @@ func _ready() -> void:
   )
   library.recursive = settings.get_value(APP_SECTION, RECURSIVE_KEY, false)
   master_volume = settings.get_value(APP_SECTION, MASTER_VOLUME_KEY, default_master_volume)
-  _apply_master_volume(master_volume)
+  set_master_volume(master_volume)
   var saved_mode := StringName(settings.get_value(APP_SECTION, PLAYBACK_MODE_KEY, String(playback_mode)))
   if SoundPlaybackComponent.MODE_IDS.has(saved_mode):
     playback_mode = saved_mode
@@ -195,7 +196,7 @@ func _build_ui() -> void:
   _recursive_toggle = GoStyle.toggle("Subfolders", false)
   _recursive_toggle.set_pressed_no_signal(library.recursive)
   _recursive_toggle.tooltip_text = "Include sub-folders as groups"
-  _recursive_toggle.toggled.connect(func(on: bool) -> void: library.recursive = on)
+  _recursive_toggle.toggled.connect(set_recursive)
   toolbar.add_child(_recursive_toggle)
   _mode_picker = GoStyle.picker()
   for mode_id in SoundPlaybackComponent.MODE_IDS:
@@ -203,7 +204,7 @@ func _build_ui() -> void:
   _mode_picker.select(SoundPlaybackComponent.MODE_IDS.find(playback_mode))
   _mode_picker.tooltip_text = "Click behavior for all sounds\nOverlap: every click adds a voice\nRestart: a click restarts the sound\nToggle: a click starts or stops the sound"
   _mode_picker.item_selected.connect(
-    func(index: int) -> void: _set_playback_mode(SoundPlaybackComponent.MODE_IDS[index])
+    func(index: int) -> void: set_playback_mode(SoundPlaybackComponent.MODE_IDS[index])
   )
   toolbar.add_child(_mode_picker)
   _search_edit = GoStyle.line_edit("Search name or note (Ctrl+F)")
@@ -219,7 +220,7 @@ func _build_ui() -> void:
   _master_slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
   _master_slider.tooltip_text = "Master volume"
   _master_slider.value = master_volume
-  _master_slider.value_changed.connect(_apply_master_volume)
+  _master_slider.value_changed.connect(set_master_volume)
   toolbar.add_child(_master_slider)
   toolbar.add_child(GoStyle.button("Stop all (Esc)", playback.stop_all, GoStyle.Tone.DANGER))
   var settings_button := GoStyle.icon_button(GoIconSet.SETTINGS, settings_dialog.open_dialog)
@@ -296,6 +297,9 @@ func _create_card(entry: SoundEntry) -> SoundCard:
       library.set_note(entry, note)
       _apply_filter()
     )
+  )
+  card.copy_requested.connect(func(full_path: bool) -> void:
+    copy_to_clipboard(entry.path if full_path else entry.relative_path.get_file())
   )
   card.volume_changed.connect(func(volume: float) -> void:
     library.set_volume(entry, volume)
@@ -384,17 +388,32 @@ func _on_sound_stopped(path: String) -> void:
   _update_status()
 
 
-func _set_playback_mode(mode: StringName) -> void:
+## Setters shared by the toolbar and the settings dialog; each keeps the toolbar in sync.
+func set_playback_mode(mode: StringName) -> void:
   var index := SoundPlaybackComponent.MODE_IDS.find(mode)
   if index < 0:
     return
   playback_mode = mode
-  _mode_picker.select(index)
+  if _mode_picker != null:
+    _mode_picker.select(index)
 
 
-func _apply_master_volume(volume: float) -> void:
-  master_volume = volume
-  AudioServer.set_bus_volume_linear(0, volume)
+func set_master_volume(volume: float) -> void:
+  master_volume = clampf(volume, 0.0, 1.0)
+  AudioServer.set_bus_volume_linear(0, master_volume)
+  if _master_slider != null:
+    _master_slider.set_value_no_signal(master_volume)
+
+
+func set_recursive(on: bool) -> void:
+  library.recursive = on
+  if _recursive_toggle != null:
+    _recursive_toggle.set_pressed_no_signal(on)
+
+
+func copy_to_clipboard(text: String) -> void:
+  DisplayServer.clipboard_set(text)
+  _snackbar.show_text("Copied: %s" % text, GoTheme.TEXT, COPY_NOTICE_SECONDS)
 
 
 func _show_error(message: String) -> void:

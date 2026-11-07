@@ -39,6 +39,8 @@ class Subpage extends RefCounted:
 
 ## Requests a dialog rebuild. The dialog invokes [param change] after capturing its UI state.
 signal rebuild_requested(change: Callable)
+## Asks the dialog to close, e.g. after an action that hands control back to the app.
+signal close_requested
 
 @export var page_id: StringName = &"page"
 @export var page_title: String = "Page"

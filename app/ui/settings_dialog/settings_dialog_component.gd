@@ -40,6 +40,7 @@ func _ready() -> void:
     # Deferred: a request usually comes from a dropdown whose popup is still closing. Rebuilding
     # synchronously removes that popup mid-close, which logs disconnect and grab_focus errors.
     provider.rebuild_requested.connect(_on_provider_rebuild_requested, CONNECT_DEFERRED)
+    provider.close_requested.connect(close_dialog, CONNECT_DEFERRED)
 
 
 func _unhandled_input(event: InputEvent) -> void:

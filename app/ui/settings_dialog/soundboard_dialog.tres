@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="SettingsDialogDefinition" load_steps=10 format=3]
+[gd_resource type="Resource" script_class="SettingsDialogDefinition" load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://app/ui/settings_dialog/settings_dialog_definition.gd" id="1_definition"]
 [ext_resource type="Script" path="res://app/ui/settings_dialog/dialog_shortcut.gd" id="2_shortcut"]
@@ -43,6 +43,13 @@ fallback_key = "Ctrl+Enter"
 title = "Save note"
 detail = "Click a note line to edit it; Ctrl+Enter saves, Esc cancels."
 
+[sub_resource type="Resource" id="Shortcut_copy"]
+script = ExtResource("2_shortcut")
+section = "NOTES"
+fallback_key = "Ctrl+Click"
+title = "Copy path"
+detail = "Click the copy icon beside a play button to copy the file name; Ctrl+click copies the full path."
+
 [sub_resource type="Resource" id="Shortcut_settings"]
 script = ExtResource("2_shortcut")
 section = "APP"
@@ -53,7 +60,7 @@ detail = "Open or close this dialog."
 
 [resource]
 script = ExtResource("1_definition")
-shortcuts = Array[ExtResource("2_shortcut")]([SubResource("Shortcut_open"), SubResource("Shortcut_rescan"), SubResource("Shortcut_search"), SubResource("Shortcut_stop"), SubResource("Shortcut_note"), SubResource("Shortcut_settings")])
+shortcuts = Array[ExtResource("2_shortcut")]([SubResource("Shortcut_open"), SubResource("Shortcut_rescan"), SubResource("Shortcut_search"), SubResource("Shortcut_stop"), SubResource("Shortcut_note"), SubResource("Shortcut_copy"), SubResource("Shortcut_settings")])
 project_name = "Soundboard"
 project_icon = ExtResource("3_icon")
 version_path = "res://version.txt"
